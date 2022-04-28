@@ -46,9 +46,11 @@ ingress:
   annotations: {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
-  paths:
-    - path: /demo/anti-spoofer
-      pathType: Prefix
+  hosts:
+    - host:
+      paths:
+        - path: /demo-antispoofer
+          pathType: Prefix
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:

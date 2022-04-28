@@ -1,8 +1,18 @@
 {{- if .Values.ingress.enabled -}}
 {{- $fullName := include "demo-anti-spoofer.fullname" . -}}
 {{- $svcPort := .Values.service.port -}}
-{{- $hosts := list "localhost" (printf "%s-kong-proxy" .Release.Name) ( .Values.global.external_host | default (printf "%s.eng.smartdigits.io" .Release.Name)) -}}
+{{- if and .Values.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.ingress.annotations "kubernetes.io/ingress.class" .Values.ingress.className}}
+  {{- end }}
+{{- end }}
+{{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
 apiVersion: networking.k8s.io/v1
+{{- else if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: networking.k8s.io/v1beta1
+{{- else -}}
+apiVersion: extensions/v1beta1
+{{- end }}
 kind: Ingress
 metadata:
   name: {{ $fullName }}
@@ -25,18 +35,25 @@ spec:
     {{- end }}
   {{- end }}
   rules:
-    {{- range $index, $host := $hosts }}
-    - host: {{ $host }}
+    {{- range .Values.ingress.hosts }}
+    - host: {{ .host | quote }}
       http:
         paths:
-          {{- range $.Values.ingress.paths }}
+          {{- range .paths }}
           - path: {{ .path }}
+            {{- if and .pathType (semverCompare ">=1.18-0" $.Capabilities.KubeVersion.GitVersion) }}
             pathType: {{ .pathType }}
+            {{- end }}
             backend:
+              {{- if semverCompare ">=1.19-0" $.Capabilities.KubeVersion.GitVersion }}
               service:
                 name: {{ $fullName }}
                 port:
                   number: {{ $svcPort }}
+              {{- else }}
+              serviceName: {{ $fullName }}
+              servicePort: {{ $svcPort }}
+              {{- end }}
           {{- end }}
     {{- end }}
 {{- end }}
