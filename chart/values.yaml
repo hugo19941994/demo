@@ -10,7 +10,8 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
 
-imagePullSecrets: []
+imagePullSecrets:
+  - name: "regcredaws"
 nameOverride: ""
 fullnameOverride: ""
 
@@ -49,7 +50,7 @@ ingress:
   hosts:
     - host:
       paths:
-        - path: /demo-antispoofer
+        - path: /demo/anti-spoofer
           pathType: Prefix
   tls: []
   #  - secretName: chart-example-tls
